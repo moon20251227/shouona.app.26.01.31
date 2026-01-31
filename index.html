@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>收纳王 V8 - Markdown增强版</title>
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/4336/4336631.png">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="收纳王">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="收纳王">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -155,7 +155,11 @@
 
                 <div class="flex justify-between items-center mt-4 pt-3 border-t border-black/5">
                     <span class="text-[9px] text-slate-400 font-mono">{{ formatDate(item.createTime) }}</span>
-                    <div class="flex gap-3">
+                    <div class="flex gap-2">
+                        <!-- 新增复制按钮 -->
+                        <button @click="copyContent(item.content)" class="text-slate-400 p-1 active:scale-90 transition-transform" title="复制内容">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        </button>
                         <div class="drag-handle text-slate-300 p-1"><i data-lucide="move" class="w-3.5 h-3.5"></i></div>
                         <button @click="startEdit(item)" class="text-slate-400 p-1"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
                         <button @click="deleteItem(item.id)" class="text-slate-300 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
@@ -169,6 +173,7 @@
         <i data-lucide="plus" class="w-7 h-7"></i>
     </button>
 
+    <!-- 弹窗部分保持不变 -->
     <transition name="slide-up">
         <div v-if="showModal" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center">
             <div class="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-[32px] sm:rounded-[32px] flex flex-col max-h-[90vh] shadow-2xl overflow-hidden shadow-black/50 border border-white/10">
@@ -243,6 +248,7 @@
         </div>
     </div>
 
+    <!-- 统计和Toast保持不变 -->
     <transition name="slide-up">
         <div v-if="showStats" class="fixed inset-0 z-[60] flex items-end">
             <div @click="showStats = false" class="absolute inset-0 bg-black/40"></div>
@@ -304,6 +310,32 @@
             const renderMarkdown = (text) => {
                 if (!text) return '';
                 return marked.parse(text, { breaks: true, gfm: true });
+            };
+
+            // 核心复制功能
+            const copyContent = (text) => {
+                if (!text) return;
+                try {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    // 防止在页面底部弹出导致闪烁
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-9999px";
+                    textArea.style.top = "0";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (successful) {
+                        showToast('内容已复制到剪贴板');
+                    } else {
+                        showToast('复制失败，请重试');
+                    }
+                } catch (err) {
+                    showToast('浏览器不支持快捷复制');
+                }
             };
 
             watch(items, (val) => localStorage.setItem('pocket_v8_items', JSON.stringify(val)), { deep: true });
@@ -431,7 +463,8 @@
                 form, formTags, formManualTags, toast, filteredItems, tagStats, starredCount, currentFilter,
                 searchQuery, searchMode, searchModeLabel, searchModePlaceholder,
                 handleSave, deleteItem, toggleStar, randomColor, getDarkerColor, renderMarkdown,
-                formatDate, exportData, importData, toggleTagInForm, openAddModal, startEdit, toggleSearchMode, confirmClear
+                formatDate, exportData, importData, toggleTagInForm, openAddModal, startEdit, toggleSearchMode, confirmClear,
+                copyContent
             }
         }
     }).mount('#app');
